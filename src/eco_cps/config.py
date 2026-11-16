@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, fields, replace
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -35,9 +36,15 @@ class ExperimentConfig:
             "max_sensor_age_steps", "max_control_age_steps", "capacity_j",
         )
         for key in positive:
+            value = getattr(self, key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f"{key} must be finite and numeric")
             if getattr(self, key) <= 0:
                 raise ValueError(f"{key} must be > 0")
         for key in ("sensor_noise_m", "heading_noise_rad", "slip_sigma", "turn_noise_rps", "reserve_j"):
+            value = getattr(self, key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                raise ValueError(f"{key} must be finite and numeric")
             if getattr(self, key) < 0:
                 raise ValueError(f"{key} must be >= 0")
         if self.reserve_j >= self.capacity_j:
