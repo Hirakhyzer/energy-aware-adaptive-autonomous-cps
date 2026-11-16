@@ -83,7 +83,12 @@ def load_config(path: str | Path | None = None, *, seed: int | None = None) -> E
         if unknown:
             raise ValueError(f"unknown config keys: {', '.join(sorted(unknown))}")
         if "path_m" in data:
-            data["path_m"] = tuple(tuple(point) for point in data["path_m"])
+            raw_path = data["path_m"]
+            if not isinstance(raw_path, (list, tuple)) or any(
+                not isinstance(point, (list, tuple)) for point in raw_path
+            ):
+                raise ValueError("path_m must be an array of x,y points")
+            data["path_m"] = tuple(tuple(point) for point in raw_path)
         cfg = replace(cfg, **data)
     if seed is not None:
         cfg = replace(cfg, seed=seed)
