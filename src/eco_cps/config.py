@@ -30,6 +30,10 @@ class ExperimentConfig:
     reserve_j: float = 100.0
 
     def validated(self) -> ExperimentConfig:
+        for key in ("max_steps", "max_sensor_age_steps", "max_control_age_steps", "seed"):
+            value = getattr(self, key)
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise ValueError(f"{key} must be an integer")
         positive = (
             "dt_s", "max_steps", "goal_radius_m", "max_speed_mps", "max_turn_rps",
             "deadline_s", "tracking_error_limit_m", "predicted_uncertainty_limit_m",
