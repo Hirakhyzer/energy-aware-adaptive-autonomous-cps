@@ -53,8 +53,15 @@ class ExperimentConfig:
                 raise ValueError(f"{key} must be >= 0")
         if self.reserve_j >= self.capacity_j:
             raise ValueError("reserve_j must be smaller than capacity_j")
-        if len(self.path_m) < 2 or any(len(point) != 2 for point in self.path_m):
+        if not isinstance(self.path_m, (list, tuple)) or len(self.path_m) < 2 or any(
+            not isinstance(point, (list, tuple)) or len(point) != 2 for point in self.path_m
+        ):
             raise ValueError("path_m must contain at least two x,y points")
+        if any(
+            isinstance(coord, bool) or not isinstance(coord, (int, float)) or not math.isfinite(coord)
+            for point in self.path_m for coord in point
+        ):
+            raise ValueError("path_m coordinates must be finite numbers")
         if all(point == self.path_m[0] for point in self.path_m):
             raise ValueError("path_m must contain a nonzero-length segment")
         if self.seed < 0:
