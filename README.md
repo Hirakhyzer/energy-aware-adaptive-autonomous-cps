@@ -19,6 +19,7 @@ Can a battery-powered autonomous CPS reduce modeled **total mission energy** by 
 - Five ablation policies: `fixed`, `sensing_only`, `compute_only`, `control_only`, `joint`.
 - Matched-seed paired experiments and machine-readable `benchmark.json`, `runs.csv` and `summary.csv` outputs, with experiment configuration fingerprint.
 - Tests and GitHub Actions Python version matrix, plus a packaged CLI.
+- **v0.1.1 maintenance:** rejects non-finite or ill-typed scenario parameters, malformed routes, invalid seed/policy selections, and incomplete benchmark reports before saving files. The existing synthetic power and control models are unchanged.
 
 ## Install and run
 

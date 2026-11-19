@@ -4,7 +4,7 @@ title: "ECO-CPS: Energy-Aware Adaptive Autonomous Cyber-Physical Systems"
 authors:
   - family-names: Khyzer
     given-names: Hira
-version: 0.1.0
-date-released: 2026-11-06
+version: 0.1.1
+date-released: 2026-11-19
 license: MIT
 repository-code: https://github.com/Hirakhyzer/energy-aware-adaptive-autonomous-cps

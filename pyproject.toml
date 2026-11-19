@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "energy-aware-adaptive-autonomous-cps"
-version = "0.1.0"
+version = "0.1.1"
 description = "Reproducible energy-aware sensing, computing and autonomous control co-design research simulator"
 readme = "README.md"
 requires-python = ">=3.10"
