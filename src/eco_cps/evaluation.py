@@ -19,12 +19,18 @@ def benchmark(cfg: ExperimentConfig | None = None, *, seeds: Iterable[int] = (7,
               policies: Iterable[str] = POLICY_NAMES) -> dict:
     cfg = (cfg or ExperimentConfig()).validated()
     seed_list, policy_list = tuple(seeds), tuple(policies)
-    if not seed_list or not policy_list or len(seed_list) != len(set(seed_list)):
-        raise ValueError("seeds and policies must be nonempty; seeds must be unique")
+    if not seed_list or not policy_list:
+        raise ValueError("seeds and policies must be nonempty")
+    if any(isinstance(seed, bool) or not isinstance(seed, int) or seed < 0
+           for seed in seed_list):
+        raise ValueError("benchmark seeds must be nonnegative integers")
+    if len(seed_list) != len(set(seed_list)):
+        raise ValueError("seeds must be unique")
+    if any(not isinstance(policy, str) or policy not in POLICY_NAMES
+           for policy in policy_list):
+        raise ValueError("unknown benchmark policy")
     if len(policy_list) != len(set(policy_list)):
         raise ValueError("policies must be unique")
-    if any(p not in POLICY_NAMES for p in policy_list):
-        raise ValueError("unknown benchmark policy")
 
     rows = []
     for seed in seed_list:
@@ -63,6 +69,13 @@ def benchmark(cfg: ExperimentConfig | None = None, *, seeds: Iterable[int] = (7,
 
 
 def save_benchmark(report: dict, directory: str | Path) -> dict[str, str]:
+    """Reject incomplete reports before creating any output files."""
+    if (not isinstance(report, dict) or
+        not isinstance(report.get("manifest"), dict) or
+        not isinstance(report.get("runs"), list) or not report["runs"] or
+        not isinstance(report.get("summary"), list) or not report["summary"] or
+        any(not isinstance(row, dict) for row in report["runs"] + report["summary"])):
+        raise ValueError("benchmark report needs a manifest, nonempty runs and summary")
     out = Path(directory)
     out.mkdir(parents=True, exist_ok=True)
     report_path = out / "benchmark.json"

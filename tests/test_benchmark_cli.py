@@ -44,3 +44,32 @@ def test_module_cli_smoke(tmp_path):
                             cwd=root, env=env, text=True, capture_output=True)
     assert report.returncode == 0, report.stderr
     assert len(json.loads(report.stdout)) == 5
+
+
+@pytest.mark.parametrize("seeds", [
+    (-1,), (True,), (2.5,), ("7",), (None,), (7, False),
+])
+def test_benchmark_rejects_invalid_seed_types(seeds):
+    with pytest.raises(ValueError, match="nonnegative integers"):
+        benchmark(seeds=seeds)
+
+
+@pytest.mark.parametrize("policies", [
+    (), ("joint", "joint"), ("unknown",), (None,), (["joint"],),
+])
+def test_benchmark_rejects_invalid_policy_sets(policies):
+    with pytest.raises(ValueError):
+        benchmark(seeds=(7,), policies=policies)
+
+
+@pytest.mark.parametrize("report", [
+    {},
+    {"manifest": {}, "runs": [], "summary": [{}]},
+    {"manifest": {}, "runs": [{}], "summary": []},
+    {"manifest": {}, "runs": [None], "summary": [{}]},
+])
+def test_save_benchmark_rejects_incomplete_report_without_writing(tmp_path, report):
+    destination = tmp_path / "invalid"
+    with pytest.raises(ValueError, match="benchmark report"):
+        save_benchmark(report, destination)
+    assert not destination.exists()
