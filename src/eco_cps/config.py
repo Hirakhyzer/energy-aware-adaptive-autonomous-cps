@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, replace
+from math import isfinite
+from numbers import Real
 import json
 from pathlib import Path
 from typing import Any
@@ -29,25 +31,42 @@ class ExperimentConfig:
     reserve_j: float = 100.0
 
     def validated(self) -> ExperimentConfig:
-        positive = (
-            "dt_s", "max_steps", "goal_radius_m", "max_speed_mps", "max_turn_rps",
+        """Reject malformed or non-finite parameters before simulation begins."""
+        positive_real = (
+            "dt_s", "goal_radius_m", "max_speed_mps", "max_turn_rps",
             "deadline_s", "tracking_error_limit_m", "predicted_uncertainty_limit_m",
-            "max_sensor_age_steps", "max_control_age_steps", "capacity_j",
+            "capacity_j",
         )
-        for key in positive:
-            if getattr(self, key) <= 0:
+        nonnegative_real = (
+            "sensor_noise_m", "heading_noise_rad", "slip_sigma",
+            "turn_noise_rps", "reserve_j",
+        )
+        for key in positive_real + nonnegative_real:
+            value = getattr(self, key)
+            if isinstance(value, bool) or not isinstance(value, Real) or not isfinite(value):
+                raise ValueError(f"{key} must be a finite number")
+            if key in positive_real and value <= 0:
                 raise ValueError(f"{key} must be > 0")
-        for key in ("sensor_noise_m", "heading_noise_rad", "slip_sigma", "turn_noise_rps", "reserve_j"):
-            if getattr(self, key) < 0:
+            if key in nonnegative_real and value < 0:
                 raise ValueError(f"{key} must be >= 0")
+
+        for key in ("max_steps", "max_sensor_age_steps", "max_control_age_steps"):
+            value = getattr(self, key)
+            if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                raise ValueError(f"{key} must be a positive integer")
+        if isinstance(self.seed, bool) or not isinstance(self.seed, int) or self.seed < 0:
+            raise ValueError("seed must be a nonnegative integer")
         if self.reserve_j >= self.capacity_j:
             raise ValueError("reserve_j must be smaller than capacity_j")
-        if len(self.path_m) < 2 or any(len(point) != 2 for point in self.path_m):
+        if not isinstance(self.path_m, (tuple, list)) or len(self.path_m) < 2:
             raise ValueError("path_m must contain at least two x,y points")
+        for point in self.path_m:
+            if (not isinstance(point, (tuple, list)) or len(point) != 2 or
+                any(isinstance(value, bool) or not isinstance(value, Real) or
+                    not isfinite(value) for value in point)):
+                raise ValueError("path_m points must have two finite numeric coordinates")
         if all(point == self.path_m[0] for point in self.path_m):
             raise ValueError("path_m must contain a nonzero-length segment")
-        if self.seed < 0:
-            raise ValueError("seed must be nonnegative")
         return self
 
     def as_dict(self) -> dict[str, Any]:
@@ -65,6 +84,10 @@ def load_config(path: str | Path | None = None, *, seed: int | None = None) -> E
         if unknown:
             raise ValueError(f"unknown config keys: {', '.join(sorted(unknown))}")
         if "path_m" in data:
+            if not isinstance(data["path_m"], list) or any(
+                not isinstance(point, list) for point in data["path_m"]
+            ):
+                raise ValueError("path_m must be an array of coordinate pairs")
             data["path_m"] = tuple(tuple(point) for point in data["path_m"])
         cfg = replace(cfg, **data)
     if seed is not None:
